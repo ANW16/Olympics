@@ -32,14 +32,57 @@ FROM (country_stats INNER JOIN countries ON country_stats.country_id =countries.
 WHERE country_stats.gdp > 
 	(SELECT AVG(country_stats.gdp) FROM country_stats)
 AND year = '2004-01-01'
-*/	
-
-SELECT AVG(height) AS avg_height, gender, height, age, name
-FROM athletes
-GROUP BY gender, height, age, name
 
 
+WITH tall_athletes AS (SELECT *
+						FROM athletes
+						WHERE CAST(height AS decimal) >
+						(SELECT AVG(CAST(height AS decimal))FROM athletes) AND age > 30 AND gender = 'F') 	
+SELECT AVG(weight)
+FROM tall_athletes
 
+
+WITH total_medals AS (SELECT COUNT(bronze) + COUNT(silver) + COUNT(gold) AS medals, country_id
+FROM winter_games
+GROUP BY country_id
+ORDER BY medals)
+
+SELECT medals, country_stats.country_id, country, CAST(pop_in_millions AS FLOAT), year, medals/CAST(pop_in_millions AS FLOAT) AS medals_per_capita
+FROM (total_medals INNER JOIN country_stats ON total_medals.country_id = country_stats.country_id INNER JOIN countries ON country_stats.country_id=countries.id)
+WHERE pop_in_millions IS NOT NULL AND year = '2016-01-01'
+GROUP BY country_stats.country_id, total_medals.medals, country_stats.pop_in_millions,country_stats.year, countries.country
+ORDER BY medals_per_capita DESC
+
+*/
+
+
+
+
+
+WITH summer_gold_one AS (SELECT countries.country, COUNT(summer_games.gold) AS total_gold, COUNT(winter_games.bronze) + COUNT(winter_games.silver) + COUNT(winter_games.gold) AS total_winter_medals
+							FROM summer_games INNER JOIN winter_games 
+						 	ON summer_games.country_id = winter_games.country_id
+							INNER JOIN countries 
+						 	ON summer_games.country_id = countries.id
+							GROUP BY countries.country, summer_games.gold)
+							
+SELECT *
+FROM summer_gold_one
+WHERE total_gold = 1
+ORDER BY total_winter_medals DESC
+
+
+/*
+WITH countires_one_gold_medal AS (SELECT SUM(gold) AS sum_gold
+								FROM summer_games
+								GROUP BY country_id, gold
+								HAVING SUM(gold) = 1)
+			
+SELECT country, gold
+FROM countires_one_gold_medal INNER JOIN countries
+ON countires_one_gold_medal.country_id = countries.id
+
+*/
 
 
 
