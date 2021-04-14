@@ -53,7 +53,7 @@ WHERE pop_in_millions IS NOT NULL AND year = '2016-01-01'
 GROUP BY country_stats.country_id, total_medals.medals, country_stats.pop_in_millions,country_stats.year, countries.country
 ORDER BY medals_per_capita DESC
 
-*/
+
 
 
 
@@ -72,7 +72,7 @@ WHERE total_gold = 1
 ORDER BY total_winter_medals DESC
 
 
-/*
+
 WITH countires_one_gold_medal AS (SELECT SUM(gold) AS sum_gold
 								FROM summer_games
 								GROUP BY country_id, gold
@@ -83,6 +83,23 @@ FROM countires_one_gold_medal INNER JOIN countries
 ON countires_one_gold_medal.country_id = countries.id
 
 */
+
+
+WITH summer_gold AS (SELECT COUNT(gold) AS summer_golds, country, country_id
+FROM summer_games INNER JOIN countries ON summer_games.country_id = countries.id
+GROUP BY country, country_id
+ORDER BY summer_golds DESC)
+
+
+
+SELECT summer_golds, COUNT(winter_games.bronze) + COUNT(winter_games.silver) + COUNT(winter_games.gold) AS total_winter_medals, country
+FROM summer_gold INNER JOIN winter_games ON summer_gold.country_id = winter_games.country_id
+WHERE summer_golds = 1
+GROUP BY summer_golds, country
+ORDER BY total_winter_medals DESC
+
+
+
 
 
 
