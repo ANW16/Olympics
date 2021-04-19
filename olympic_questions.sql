@@ -95,21 +95,50 @@ FROM summer_gold INNER JOIN winter_games ON summer_gold.country_id = winter_game
 WHERE summer_golds = 1
 GROUP BY summer_golds, country
 ORDER BY total_winter_medals DESC
-*/
 
+
+WITH sg_medals AS (SELECT country_id, COUNT(silver) + COUNT(bronze) AS sg_total_medals, COUNT(gold) AS sg_gold
+					FROM summer_games
+					GROUP BY country_id
+					ORDER BY sg_total_medals DESC),
+					
+wg_medals AS (SELECT country_id, COUNT(silver) + COUNT(bronze) AS wg_total_medals, COUNT(gold) AS wg_gold
+					FROM winter_games
+					GROUP BY country_id
+					ORDER BY wg_total_medals DESC)
+					
+SELECT countries.country,wg_medals.country_id AS country_id, wg_total_medals + sg_total_medals AS total_medals
+FROM sg_medals FULL JOIN wg_medals ON sg_medals.country_id = wg_medals.country_id
+				INNER JOIN countries ON sg_medals.country_id = countries.id
+WHERE sg_gold = 0 AND wg_gold = 0
+ORDER BY total_medals DESC
+*/
 
 /*
-WITH avg_winter_pts AS (SELECT ((SUM(gold) * 5) + (SUM(silver) * 3) + SUM(bronze)) / COUNT(DISTINCT country_id) AS avg_winter_points_per_country
-										FROM winter_games)
-
-SELECT ((SUM(gold) * 5) + (SUM(silver) * 3) + SUM(bronze)) / COUNT(DISTINCT country_id)
-FROM summer_games INNER JOIN avg_winter_pts ON summer_games.country_id = avg_winter_pts.country_id
+WITH summer_points AS (SELECT country_id, (COUNT(gold) * 5) + (COUNT(silver) * 3) + (COUNT(bronze) * 1) AS sg_medal_points
+						FROM summer_games
+					   GROUP BY country_id
+						ORDER BY sg_medal_points DESC),
+						
+winter_points AS (SELECT country_id, (COUNT(gold) * 5) + (COUNT(silver) * 3) + (COUNT(bronze) * 1) AS wg_medal_points
+						FROM winter_games
+				  GROUP BY country_id
+						ORDER BY wg_medal_points DESC),
+			 
+both_games AS (SELECT COALESCE (summer_points.country_id, winter_points.country_id) AS country_id
+				FROM winter_points FULL JOIN summer_points ON winter_points.country_id = summer_points.country_id)
+				
+SELECT (SELECT(SUM(wg_medal_points) + SUM(sg_medal_points))
+	   FROM winter_points FULL JOIN summer_points ON winter_points.country_id = summer_points.country_id) / (SUM(CAST(pop_in_millions AS FLOAT)) / 10)
+FROM both_games INNER JOIN country_stats ON both_games.country_id = country_stats.country_id
+WHERE country_stats.year = '2016-01-01'
 */
 
 
-SELECT summer_games.country_id, COUNT(summer_games.gold) AS summer_golds, COUNT(winter_games.gold) AS winter_golds
-FROM winter_games INNER JOIN summer_games ON winter_games.country_id = summer_games.country_id
-GROUP BY summer_games.country_id
+						
+					
+
+
 
 
 
